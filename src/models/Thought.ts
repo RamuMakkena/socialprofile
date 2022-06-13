@@ -1,5 +1,4 @@
 import {model, Schema, Types} from "mongoose";
-import dateFormat, {masks} from "dateformat";
 const ReactionSchema = new Schema({
     reactionId: {
         type: Schema.Types.ObjectId,
@@ -17,7 +16,7 @@ const ReactionSchema = new Schema({
     createdAt : {
         type: Date,
         default: Date.now,
-        get: (createdAtVal: Date) => dateFormat(createdAtVal, "dddd, mmmm dS, yyyy, h:MM:ss TT")
+        get: (createdAtVal: Date) => createdAtVal.toISOString()
     }
 },{
     toJSON:{
@@ -35,13 +34,13 @@ const ThoughtSchema = new Schema({
     createdAt : {
         type: Date,
         default: Date.now,
-        get: (createdAtVal: Date) => dateFormat(createdAtVal, "dddd, mmmm dS, yyyy, h:MM:ss TT")
+        get: (createdAtVal: Date) => createdAtVal.toISOString()
     },
     username : {
         type: String,
         required: true
     },
-    reaction : [
+    reactions : [
         ReactionSchema
     ]
 },

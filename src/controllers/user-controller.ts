@@ -1,9 +1,10 @@
-import { response } from "express";
+import { Request, Response } from "express";
+import { Thought } from "../models/Thought";
 import { User } from "../models/User";
 
 export const userController = {
     //method to retrieve all users
-    getAllUsers(req, res : response){
+    getAllUsers(req : Request, res : Response){
         User.find({})
         .then(dbUsers => res.json(dbUsers))        
         .catch( err => {
@@ -12,26 +13,30 @@ export const userController = {
         });
     },
     //get user by their id
-    getUserById({params}, res : response){
+    getUserById(req: Request  , res : Response){
         // Need to incorporate thoughts & friends data
-        User.findById({_id: params.id})
+        console.log("user id : "+ req.params.id);
+        User.findById({_id: req.params.id})
         .populate({
             path: 'thoughts',
             select: '-_v'
         })
         .populate({
-            path: 'users',
+            path: 'friends',
             select: '-_v'
 
         })
         .select('-_v')
         .then(dbUserData => {
+            console.log("db user data is "+dbUserData);
             if(!dbUserData){
                 res.status(404).json({
                     message : "User not found with give ID"
                     });
                 return;
             }
+            res.json(dbUserData)
+
         })
         .catch(err => {
             console.log(err);
@@ -39,14 +44,14 @@ export const userController = {
         });
     },
     //Create User
-    createNewuser({body}, res : response){
-        User.create(body)
+    createNewuser(req : Request, res : Response){
+        User.create(req.body)
         .then(dbUserData => res.json(dbUserData))
         .catch(err => res.status(400).json(err));
     },
     //Updating User
-    updateUser({params, body}, res : response){
-        User.findOneAndUpdate({_id : params.id}, body, { new:true })
+    updateUser(req : Request, res : Response){
+        User.findOneAndUpdate({_id : req.params.id}, req.body, { new:true })
         .then(dbUserData => {
             if(!dbUserData){
                 res.status(404).json({
@@ -54,12 +59,13 @@ export const userController = {
                 });
                 return;
             }
+            res.json(dbUserData);
         })
         .catch( err => res.status(400).json(err));
     },
     //delete user
-    deleteUser({params}, res : response){
-        User.findOneAndDelete({_id: params.id})
+    deleteUser(req : Request , res : Response){
+        User.findOneAndDelete({_id: req.params.id})
         .then(dbUserData => {
             if(!dbUserData){
                 res.status(404).json({
@@ -67,14 +73,22 @@ export const userController = {
                 });
                 return;
             }
-            res.json(dbUserData);
+            Thought.deleteMany({username: dbUserData.username})
+            .then(dbThoughtsData => {
+                res.json(dbUserData);
+            })
+            .catch(err => res.status(400).json(err));
+
+            
         })
+        
         .catch(err => res.status(400).json(err));
     },
 
     //Adding a friend to user
-    addFriend({params}, res: response){
-        User.findOneAndUpdate({_id : params.userId},{ $push: {friends: params.friendId} }, { new:true })
+    addFriend(req : Request, res: Response){
+        console.log("we came here to ass a friend");
+        User.findOneAndUpdate({_id : req.params.id},{ $push: {friends:  req.params.friendId} }, { new:true })
         .then(dbUserData => {
             if(!dbUserData){
                 res.status(404).json({
@@ -82,13 +96,14 @@ export const userController = {
                 });
                 return;
             }
+            res.json(dbUserData);
         })
         .catch( err => res.status(400).json(err));
     },
 
     //Delete a friend from user
-    deleteFriend({params}, res: response){
-        User.findOneAndUpdate({_id : params.userId},{ $pull: {friends: params.friendId} }, { new:true })
+    deleteFriend(req : Request, res: Response){
+        User.findOneAndUpdate({_id : req.params.id},{ $pull: {friends: req.params.friendId} }, { new:true })
         .then(dbUserData => {
             if(!dbUserData){
                 res.status(404).json({
@@ -96,6 +111,7 @@ export const userController = {
                 });
                 return;
             }
+            res.json(dbUserData);
         })
         .catch( err => res.status(400).json(err));
     }
